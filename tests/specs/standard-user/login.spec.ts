@@ -3,30 +3,31 @@ import { test, expect } from '@playwright/test';
 import { LoginPage } from '../../pages/login.page';
 import { InventoryPage } from '../../pages/inventory.page';
 
-test.describe('Standard User Tests', () => {
+test.describe('Login Tests', () => {
     let loginPage: LoginPage;
     let inventoryPage: InventoryPage;
 
-    // Vor jedem Test
     test.beforeEach(async ({ page }) => {
         loginPage = new LoginPage(page);
         inventoryPage = new InventoryPage(page);
-        await page.goto('/'); // Navigiert zur Login-Seite
+        await page.goto('/');
     });
 
-    // Positiver Test: Erfolgreicher Login
-    test('should login successfully as standard user', async ({ page }) => {
-        await loginPage.login('standard_user', 'secret_sauce');
-        // Korrekte Playwright Erwartung
+    test('standard user login', async ({ page }) => {
+        await loginPage.login(
+            process.env.STANDARD_USER || '',
+            process.env.SAUCE_PASSWORD || ''
+        );
         await expect(page.locator(inventoryPage.getProductListSelector())).toBeVisible();
     });
 
-    // Negativer Test: Fehlgeschlagener Login
-    test('should show error with wrong password', async ({ page }) => {
-        await loginPage.login('standard_user', 'wrong_password');
-        // Korrekte Playwright Erwartungen
+    test('locked user blocked', async ({ page }) => {
+        await loginPage.login(
+            process.env.LOCKED_OUT_USER || '',
+            process.env.SAUCE_PASSWORD || ''
+        );
         await expect(page.locator(loginPage.getErrorMessageSelector())).toBeVisible();
         await expect(page.locator(loginPage.getErrorMessageSelector()))
-            .toContainText('Username and password do not match');
+            .toContainText('Epic sadface: Sorry, this user has been locked out');
     });
 });
