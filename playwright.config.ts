@@ -63,7 +63,7 @@ export default defineConfig({
   reporter: [
     ['html', {
       outputFolder: path.join('test-results', `html-report${process.env.SHARD_NUMBER ? '-shard-' + process.env.SHARD_NUMBER : ''}`),
-      open: process.env.CI ? 'never' : 'on-failure',
+      open: process.env.CI ? 'never' : 'always',
       attachments: true
     }],
     ['json', {  
@@ -77,9 +77,9 @@ export default defineConfig({
   use: {
     baseURL: 'https://www.saucedemo.com',
     viewport: { width: 1280, height: 720 },
-    navigationTimeout: process.env.PERFORMANCE_TEST ? 30000 : 15000,
-    actionTimeout: process.env.PERFORMANCE_TEST ? 20000 : 10000,
-    trace: process.env.CI ? 'on-first-retry' : 'retain-on-failure',
+    navigationTimeout: 30000, // Navigation timeout auf 30 Sekunden erhöhen
+    actionTimeout: 15000,     // Aktionen wie Click auf 15 Sekunden setzen
+    trace: 'on',              // Immer Traces für alle Tests aufnehmen
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     ignoreHTTPSErrors: true
