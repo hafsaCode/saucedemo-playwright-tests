@@ -21,7 +21,6 @@ test.describe('Visual Layout Tests', () => {
         const menuButton = await page.locator('#react-burger-menu-btn');
         await expect(menuButton).toBeVisible();
         const buttonBox = await menuButton.boundingBox();
-        
         expect(buttonBox).toBeTruthy();
         if (buttonBox) {
             expect(buttonBox.x).toBeLessThan(100);
@@ -29,32 +28,36 @@ test.describe('Visual Layout Tests', () => {
         }
     });
 
-    test('verify checkout button position', async ({ page }) => {
-        // Setup: Produkt zum Warenkorb hinzufügen
+    // Überarbeiteter Checkout-Button Test
+    test('verify checkout button visibility and functionality', async ({ page }) => {
+        // 1. Zum Cart navigieren
         await inventoryPage.addProductToCart('Sauce Labs Backpack');
+        await page.waitForLoadState('networkidle');
         await inventoryPage.openCart();
-        
-        // Prüfe Grundlegende Sichtbarkeit und Erreichbarkeit
+        await page.waitForLoadState('networkidle');
+
+        // 2. Warten auf Cart Container
+        await expect(page.locator('.cart_contents_container')).toBeVisible();
+
+        // 3. Checkout Button finden und prüfen
         const checkoutButton = page.locator('[data-test="checkout"]');
         await expect(checkoutButton).toBeVisible();
-        await expect(checkoutButton).toBeEnabled();
 
-        // Prüfe die Reihenfolge der Elemente im Cart
-        const cartList = page.locator('.cart_list');
-        await expect(cartList).toBeVisible();
+        // 4. Prüfen ob der Button im sichtbaren Bereich ist
+        const isVisible = await checkoutButton.isVisible();
+        expect(isVisible).toBeTruthy();
 
-        // Prüfe ob der Button im Cart-Container ist
-        const buttonInCart = await page.evaluate(() => {
+        // 5. Prüfen ob der Button klickbar ist
+        const isEnabled = await checkoutButton.isEnabled();
+        expect(isEnabled).toBeTruthy();
+
+        // 6. Prüfen ob der Button im Cart Container ist
+        const isInCart = await page.evaluate(() => {
             const button = document.querySelector('[data-test="checkout"]');
             const cart = document.querySelector('.cart_contents_container');
             return button && cart && cart.contains(button);
         });
-        expect(buttonInCart).toBeTruthy();
-
-        // Optional: Prüfe ob der Button klickbar ist
-        await checkoutButton.hover();
-        const isClickable = await checkoutButton.isEnabled();
-        expect(isClickable).toBeTruthy();
+        expect(isInCart).toBeTruthy();
     });
 
     test('verify shopping cart alignment', async ({ page }) => {
