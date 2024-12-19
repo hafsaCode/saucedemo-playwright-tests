@@ -11,42 +11,26 @@ export class InventoryPage extends BasePage {
        cartLink: '.shopping_cart_link',
        productPrice: '.inventory_item_price',
        productName: '.inventory_item_name',
-       continueShopping: '[data-test="continue-shopping"]',
-       addToCartButton: (name: string) => `[data-test="add-to-cart-${name.toLowerCase().replace(/ /g, '-')}"]`,
-       removeButton: (name: string) => `[data-test="remove-${name.toLowerCase().replace(/ /g, '-')}"]`
+       sortErrorMessage: 'text=Sorting is broken!',
+       sortErrorOkButton: 'button:has-text("Ok")',
+       addToCartButton: (name: string) => `[data-test="add-to-cart-${name.toLowerCase().replace(/[() ]/g, '-')}"]`,
+       removeButton: (name: string) => `[data-test="remove-${name.toLowerCase().replace(/[() ]/g, '-')}"]`
    };
 
    constructor(page: Page) {
        super(page);
    }
 
-   // Getter für Test-Assertions
+   // Basis Getter und Navigation
    getProductListSelector() {
        return this.selectors.productList;
    }
 
-   // Standard Navigation
    async openCart() {
        await this.page.click(this.selectors.cartLink);
    }
 
-   // Performance-Messungen für Cart Navigation
-   async openCartWithTiming(): Promise<number> {
-       return this.measureActionTime(
-           async () => await this.openCart(),
-           '.cart_list'
-       );
-   }
-
-   // Zurück zur Inventory-Seite mit Performance-Messung
-   async returnToInventoryWithTiming(): Promise<number> {
-       return this.measureActionTime(
-           async () => await this.page.click(this.selectors.continueShopping),
-           this.selectors.productList
-       );
-   }
-
-   // Standard Produkt-Aktionen
+   // Standard Warenkorb-Aktionen
    async addProductToCart(productName: string) {
        await this.page.click(this.selectors.addToCartButton(productName));
    }
@@ -55,33 +39,57 @@ export class InventoryPage extends BasePage {
        await this.page.click(this.selectors.removeButton(productName));
    }
 
-   // Performance-Messung für Produkt-Aktionen
-   async addProductToCartWithTiming(productName: string): Promise<number> {
-       return this.measureActionTime(
-           async () => await this.addProductToCart(productName),
-           this.selectors.cartBadge
-       );
-   }
-
-   // Sortierung mit Performance-Messung
-   async sortProductsWithTiming(option: 'az' | 'za' | 'lohi' | 'hilo'): Promise<number> {
-       return this.measureActionTime(
-           async () => {
-               await this.page.waitForSelector(this.selectors.sortDropdown);
-               await this.page.selectOption(this.selectors.sortDropdown, option);
-           },
-           this.selectors.productList
-       );
-   }
-
    // Standard Sortierung
    async sortProducts(option: 'az' | 'za' | 'lohi' | 'hilo') {
-       await this.page.waitForSelector(this.selectors.sortDropdown);
        await this.page.selectOption(this.selectors.sortDropdown, option);
-       await this.waitForNetworkIdle();
    }
 
-   // Warenkorb Funktionen
+   // Erweiterte Add/Remove Methoden für error_user
+   async tryAddProductToCart(productName: string): Promise<boolean> {
+       try {
+           const countBefore = await this.getCartItemCount();
+           await this.page.click(this.selectors.addToCartButton(productName));
+           await this.page.waitForTimeout(500);
+           const countAfter = await this.getCartItemCount();
+           return countAfter > countBefore;
+       } catch {
+           return false;
+       }
+   }
+
+   async tryRemoveProductFromCart(productName: string): Promise<boolean> {
+       try {
+           const countBefore = await this.getCartItemCount();
+           await this.page.click(this.selectors.removeButton(productName));
+           await this.page.waitForTimeout(500);
+           const countAfter = await this.getCartItemCount();
+           return countAfter < countBefore;
+       } catch {
+           return false;
+       }
+   }
+
+   // Erweiterte Sort Methode für error_user
+   async trySort(option: 'az' | 'za' | 'lohi' | 'hilo'): Promise<boolean> {
+       try {
+           await this.page.selectOption(this.selectors.sortDropdown, option);
+           // Prüfe auf Fehlermeldung
+           const errorMessage = this.page.locator(this.selectors.sortErrorMessage);
+           const isError = await errorMessage.isVisible({ timeout: 2000 });
+           if (isError) {
+               const okButton = this.page.locator(this.selectors.sortErrorOkButton);
+               if (await okButton.isVisible()) {
+                   await okButton.click();
+               }
+               return false;
+           }
+           return true;
+       } catch {
+           return false;
+       }
+   }
+
+   // Warenkorb Status
    async getCartItemCount() {
        const badge = await this.page.locator(this.selectors.cartBadge);
        if (await badge.isVisible()) {
@@ -90,9 +98,14 @@ export class InventoryPage extends BasePage {
        return 0;
    }
 
-   // Produkt Funktionen
+   // Produkt Informationen
    async getProductCount() {
        return await this.page.locator(this.selectors.inventoryItem).count();
+   }
+
+   async getProductNames(): Promise<string[]> {
+       await this.page.waitForSelector(this.selectors.productName);
+       return await this.page.locator(this.selectors.productName).allTextContents();
    }
 
    async getProductPrices(): Promise<number[]> {
@@ -101,59 +114,8 @@ export class InventoryPage extends BasePage {
        return prices.map(price => parseFloat(price.replace('$', '')));
    }
 
-   async getProductNames(): Promise<string[]> {
-       await this.page.waitForSelector(this.selectors.productName);
-       return await this.page.locator(this.selectors.productName).allTextContents();
-   }
-
    async isProductVisible(productName: string) {
        const product = await this.page.locator(this.selectors.productName).filter({ hasText: productName });
        return await product.isVisible();
-   }
-
-   // Seiten-Validierung
-   async isOnInventoryPage() {
-       return await this.page.isVisible(this.selectors.productList);
-   }
-
-   // Performance Metriken
-   async getInventoryLoadMetrics() {
-       return await this.getPerformanceMetrics();
-   }
-
-   // Warten auf vollständiges Laden der Inventory-Seite
-   async waitForInventoryLoad(): Promise<number> {
-       return await this.waitForElementWithTiming(this.selectors.productList);
-   }
-
-   // Detaillierte Performance-Messung für Seitenladezeit
-   async getDetailedLoadMetrics() {
-       const metrics = {
-           initialLoad: 0,
-           productsVisible: 0,
-           imagesLoaded: 0,
-           totalTime: 0
-       };
-
-       const startTime = Date.now();
-
-       // Zeit bis Produktliste sichtbar
-       metrics.initialLoad = await this.waitForElementWithTiming(this.selectors.productList);
-
-       // Zeit bis alle Produkte sichtbar
-       metrics.productsVisible = await this.measureLoadTime(async () => {
-           await this.page.waitForSelector(`${this.selectors.inventoryItem}:nth-child(6)`);
-       });
-
-       // Zeit bis alle Bilder geladen
-       metrics.imagesLoaded = await this.measureLoadTime(async () => {
-           await this.page.waitForSelector('.inventory_item img');
-       });
-
-       // Warte auf Network Idle
-       await this.waitForNetworkIdle();
-       metrics.totalTime = Date.now() - startTime;
-
-       return metrics;
    }
 }

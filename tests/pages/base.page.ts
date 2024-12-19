@@ -30,7 +30,36 @@ export class BasePage {
         await this.page.click(selector);
     }
 
-    // Neue Performance-Methoden
+    // Warte-Methoden
+    async waitForNetworkIdle(timeout = 30000) {
+        await this.page.waitForLoadState('networkidle', { timeout });
+    }
+
+    async waitForSelector(selector: string, timeout = 30000) {
+        await this.page.waitForSelector(selector, { timeout });
+    }
+
+    // Error Handling Methoden
+    protected async tryClick(selector: string): Promise<boolean> {
+        try {
+            await this.page.click(selector);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    protected async tryFill(selector: string, value: string): Promise<boolean> {
+        try {
+            await this.page.fill(selector, value);
+            const actualValue = await this.page.inputValue(selector);
+            return actualValue === value;
+        } catch {
+            return false;
+        }
+    }
+
+    // Performance Methoden
     protected async measureLoadTime(action: () => Promise<void>): Promise<number> {
         const startTime = Date.now();
         await action();
@@ -43,36 +72,28 @@ export class BasePage {
         return Date.now() - startTime;
     }
 
-    async getPerformanceMetrics() {
-        return await this.page.evaluate(() => {
-            const perfData = window.performance.timing;
-            return {
-                navigationStart: perfData.navigationStart,
-                responseEnd: perfData.responseEnd,
-                domComplete: perfData.domComplete,
-                loadEventEnd: perfData.loadEventEnd,
-                totalTime: perfData.loadEventEnd - perfData.navigationStart,
-                serverResponseTime: perfData.responseEnd - perfData.requestStart,
-                domProcessingTime: perfData.domComplete - perfData.domInteractive
-            };
+    // URL und Navigation
+    async getCurrentUrl(): Promise<string> {
+        return this.page.url();
+    }
+
+    async waitForUrl(url: string | RegExp, timeout = 30000) {
+        await this.page.waitForURL(url, { timeout });
+    }
+
+    // Debug-Helfer
+    protected async takeScreenshot(name: string) {
+        await this.page.screenshot({ 
+            path: `screenshots/${name}.png`,
+            fullPage: true 
         });
     }
 
-    async waitForNetworkIdle(timeout = 30000) {
-        await this.page.waitForLoadState('networkidle', { timeout });
-    }
-
-    // Nützliche Methode für Performance-Tests
-    async measureActionTime(
-        action: () => Promise<void>,
-        waitForSelector?: string
-    ): Promise<number> {
-        const startTime = Date.now();
-        await action();
-        if (waitForSelector) {
-            await this.page.waitForSelector(waitForSelector);
-        }
-        await this.waitForNetworkIdle();
-        return Date.now() - startTime;
+    protected async logConsoleErrors() {
+        this.page.on('console', msg => {
+            if (msg.type() === 'error') {
+                console.error(`Page Error: ${msg.text()}`);
+            }
+        });
     }
 }
