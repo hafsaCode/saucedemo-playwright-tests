@@ -134,15 +134,31 @@ Die Test-Suite ist nach Benutzerrollen und Anwendungsfällen organisiert:
 
 ## Teststrategie
 1. **Smoke Tests:**
-   - Schnelltests für grundlegende Funktionalitäten.
+   - Login-Funktionalität
+   - Grundlegende Warenkorb-Operationen
+   - Checkout-Prozess
 2. **Regression Tests:**
-   - Sicherstellung, dass neue Änderungen bestehende Features nicht beeinträchtigen.
+   - Produktsortierung
+   - Warenkorb-Management
+   - Formularvalidierung
 3. **Negative Tests:**
-   - Validierung von Fehlerfällen und Grenzen der Anwendung.
-4. **UI-Tests:**
-   - Überprüfung der Benutzeroberfläche und Layout-Konsistenz.
+   - Fehlerhafte Logins
+   - Ungültige Formulareingaben
+   - Netzwerkfehler
+4. **UI/UX Tests:**
+   - Layout-Konsistenz
+   - Button-Funktionalität
+   - Bildanzeige
 5. **Performance Tests:**
-   - Messung der Ladezeiten und Reaktionszeiten.
+   - Seitenlade-Zeiten
+   - Reaktionszeiten
+   - Netzwerk-Metriken
+
+## CI/CD Integration
+- Automatisierte Testausführung bei Pull Requests
+- Parallele Testausführung mit Sharding
+- HTML-Testreports
+- Artefakt-Speicherung für Fehleranalyse
 
 ---
 
@@ -151,8 +167,5 @@ Die Test-Suite ist nach Benutzerrollen und Anwendungsfällen organisiert:
 - **Node.js:** JavaScript-Laufzeitumgebung.
 - **TypeScript:** Statische Typisierung.
 
----
 
-## Lizenz
-Dieses Projekt steht unter der **MIT-Lizenz**. Weitere Informationen findest du in der [LICENSE](LICENSE)-Datei.
 

@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
 import 'dotenv/config';
 
-// Test-Daten Management - nur über Umgebungsvariablen
+// Test Data Management - only through environment variables
 const testData = {
   standardUser: {
     username: process.env.STANDARD_USER,
@@ -36,30 +36,29 @@ const testData = {
   }
 };
 
-// Validierung der erforderlichen Umgebungsvariablen
+// Validate required environment variables
 if (!process.env.SAUCE_PASSWORD) {
   throw new Error('SAUCE_PASSWORD environment variable is required');
 }
 
 export default defineConfig({
-  // Basis Test-Konfiguration
+  // Base Test Configuration
   testDir: './tests',
   timeout: 30 * 1000,
   expect: {
     timeout: 5000
   },
-  
-  // Test Ausführungskonfiguration mit Sharding
+
+  // Test Execution Configuration with Sharding
   fullyParallel: true,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 2 : undefined,
-  // Sharding Konfiguration
   shard: process.env.CI ? {
     current: Number(process.env.SHARD_NUMBER) || 1,
     total: Number(process.env.TOTAL_SHARDS) || 4
   } : undefined,
 
-  // Reporting Setup mit Sharding-spezifischen Ausgabeverzeichnissen
+  // Reporting Setup with Sharding-Specific Output Directories
   reporter: [
     ['html', {
       outputFolder: path.join('test-results', `html-report${process.env.SHARD_NUMBER ? '-shard-' + process.env.SHARD_NUMBER : ''}`),
@@ -77,9 +76,9 @@ export default defineConfig({
   use: {
     baseURL: 'https://www.saucedemo.com',
     viewport: { width: 1280, height: 720 },
-    navigationTimeout: 30000, // Navigation timeout auf 30 Sekunden erhöhen
-    actionTimeout: 15000,     // Aktionen wie Click auf 15 Sekunden setzen
-    trace: 'on',              // Immer Traces für alle Tests aufnehmen
+    navigationTimeout: 30000, // Extend navigation timeout to 30 seconds
+    actionTimeout: 15000,     // Set action timeout to 15 seconds
+    trace: 'on',              // Always capture traces for all tests
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     ignoreHTTPSErrors: true
